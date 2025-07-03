@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Log + Dark Mode</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📝 Daily Health Tracker</h1>
+      <button id="toggleDark">🌙 Dark Mode</button>
+    </header>
+
+    <form id="logForm">
+      <select id="exercise" required>
+        <option value="">🏃 Select Exercise</option>
+        <option value="🏃 Running">🏃 Running</option>
+        <option value="💪 Push-ups">💪 Push-ups</option>
+        <option value="🧘 Yoga">🧘 Yoga</option>
+        <option value="🚴 Cycling">🚴 Cycling</option>
+      </select>
+
+      <select id="meal" required>
+        <option value="">🍽️ Select Meal</option>
+        <option value="🍛 Rice & Curry">🍛 Rice & Curry</option>
+        <option value="🍞 Bread & Eggs">🍞 Bread & Eggs</option>
+        <option value="🥗 Salad">🥗 Salad</option>
+        <option value="🍜 Noodles">🍜 Noodles</option>
+      </select>
+
+      <button type="submit">➕ Add Log</button>
+    </form>
+
+    <button id="clearLogs">🧹 Clear All Logs</button>
+
+    <ul id="logList"></ul>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
