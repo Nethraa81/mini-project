@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitTrack - Daily Health Tracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js" />
+  <style>
+    /* --- Global Styles --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      height: 100%;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      color: #222;
+      transition: 0.4s;
+    }
+    .dark { background: #121212; color: #fff; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 100%; width: 240px;
+      background-color: #2c3e50;
+      color: white; padding: 20px;
+      display: flex; flex-direction: column;
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+    .sidebar nav ul { list-style: none; flex-grow: 1; }
+    .sidebar nav ul li { margin-bottom: 20px; }
+    .sidebar nav ul li a {
+      color: #ecf0f1; text-decoration: none;
+      font-size: 18px; display: block;
+      padding: 10px 15px;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+    }
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li a.active { background-color: #34495e; }
+
+    .logo {
+      display: flex; align-items: center;
+      margin-bottom: 30px;
+    }
+    .logo img { height: 40px; width: 40px; margin-right: 10px; }
+    .logo h2 { font-weight: 700; font-size: 24px; letter-spacing: 2px; }
+
+    /* --- Sidebar toggle (mobile) --- */
+    .sidebar-toggle {
+      display: none; position: fixed;
+      top: 15px; left: 15px;
+      background-color: #2c3e50;
+      border: none; color: white;
+      font-size: 24px; padding: 8px 12px;
+      border-radius: 4px; cursor: pointer;
+      z-index: 1100;
+    }
+
+    /* --- Main content --- */
+    .main-content {
+      margin-left: 240px;
+      padding: 30px 40px;
+      flex-grow: 1; height: 100vh;
+      overflow-y: auto;
+    }
+    canvas {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      width: 100%; max-width: 800px;
+      height: 300px; display: block;
+      margin-bottom: 40px;
+    }
+    select, button {
+      padding: 10px; margin: 10px 5px 10px 0;
+      font-size: 16px;
+    }
+    form {
+      display: flex; flex-wrap: wrap;
+      gap: 10px; align-items: center;
+    }
+    #logList {
+      margin-top: 20px;
+      list-style: none; padding: 0;
+    }
+    #logList li {
+      background: #fff; padding: 15px;
+      border-radius: 10px; margin-bottom: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .dark #logList li { background: #1f1f1f; color: #e0e0e0; }
+    button#toggleDark { background: #2c3e50; color: white; border: none; cursor: pointer; }
+    button#clearLogs {
+      background: crimson; color: white;
+      border: none; padding: 10px;
+      margin-top: 10px; border-radius: 5px;
+    }
+    .dark button, .dark select {
+      background: #333; color: white;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-260px); width: 220px; padding: 20px 15px; }
+      .sidebar.active { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 20px 15px; }
+      .sidebar-toggle { display: block; }
+      .logo img { height: 32px; width: 32px; }
+      .logo h2 { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <img src="https://cdn-icons-png.flaticon.com/512/906/906334.png" alt="FitTrack Logo" />
+      <h2>FitTrack</h2>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="#" class="active" data-section="dashboard">🏠 Dashboard</a></li>
+        <li><a href="#" data-section="logs">📋 Logs</a></li>
+        <li><a href="#" data-section="progress-tracker">📈 Progress</a></li>
+        <li><a href="#" data-section="profile">👤 Profile</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <section id="dashboard" class="section">
+      <h1>Dashboard Overview</h1>
+      <p>Summary of your daily steps, calories, sleep, etc.</p>
+      <h2>📈 Activity Graphs</h2>
+      <canvas id="lineChart"></canvas>
+      <canvas id="pieChart"></canvas>
+    </section>
+
+    <section id="logs" class="section" style="display:none;">
+      <h1>Activity Logs</h1>
+      <form id="logForm">
+        <select id="exercise" required>
+          <option value="">🏃 Select Exercise</option>
+          <option value="🏃 Running">🏃 Running</option>
+          <option value="💪 Push-ups">💪 Push-ups</option>
+          <option value="🧘 Yoga">🧘 Yoga</option>
+          <option value="🚴 Cycling">🚴 Cycling</option>
+        </select>
+        <select id="meal" required>
+          <option value="">🍽️ Select Meal</option>
+          <option value="🍛 Rice & Curry">🍛 Rice & Curry</option>
+          <option value="🍞 Bread & Eggs">🍞 Bread & Eggs</option>
+          <option value="🥗 Salad">🥗 Salad</option>
+          <option value="🍜 Noodles">🍜 Noodles</option>
+        </select>
+        <button type="submit">➕ Add Log</button>
+      </form>
+      <button id="clearLogs">🧹 Clear All Logs</button>
+      <ul id="logList"></ul>
+    </section>
+
+    <section id="progress-tracker" class="section" style="display:none;">
+      <h1>Progress Tracker</h1>
+      <p>Charts and stats showing your fitness progress over time.</p>
+      <h2>📊 Progress Tracker</h2>
+      <canvas id="progressChart"></canvas>
+    </section>
+
+    <section id="profile" class="section" style="display:none;">
+      <h1>User Profile</h1>
+      <p>Manage your profile settings here.</p>
+      <button id="toggleDark">🌙 Toggle Dark Mode</button>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Sidebar navigation logic
+    const sidebar = document.getElementById('sidebar');
+    const toggleButton = document.getElementById('sidebarToggle');
+    const links = sidebar.querySelectorAll('nav ul li a');
+    const sections = document.querySelectorAll('.main-content .section');
+
+    toggleButton.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+    });
+
+    links.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        sections.forEach(sec => sec.style.display = 'none');
+        const target = link.getAttribute('data-section');
+        const targetSection = document.getElementById(target);
+        if (targetSection) targetSection.style.display = 'block';
+        if (window.innerWidth <= 768) sidebar.classList.remove('active');
+      });
+    });
+
+    // Dark Mode Toggle
+    document.getElementById('toggleDark').addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+    });
+
+    // ChartJS: Line, Pie, and Bar
+    const lineCtx = document.getElementById('lineChart');
+    if (lineCtx) {
+      new Chart(lineCtx, {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+          datasets: [{
+            label: 'Steps Walked',
+            data: [5000, 6000, 7000, 8000, 9000],
+            borderColor: 'blue',
+            fill: false
+          }]
+        }
+      });
+    }
+
+    const pieCtx = document.getElementById('pieChart');
+    if (pieCtx) {
+      new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+          labels: ['Carbs', 'Protein', 'Fat'],
+          datasets: [{
+            data: [50, 30, 20],
+            backgroundColor: ['#f39c12', '#2ecc71', '#e74c3c']
+          }]
+        }
+      });
+    }
+
+    const progressCtx = document.getElementById('progressChart');
+    if (progressCtx) {
+      new Chart(progressCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Week 1', 'Week 2', 'Week 3'],
+          datasets: [{
+            label: 'Calories Burned',
+            data: [1000, 1400, 1800],
+            backgroundColor: 'purple'
+          }]
+        }
+      });
+    }
+
+    // Log form logic
+    const form = document.getElementById('logForm');
+    const logList = document.getElementById('logList');
+    const logs = JSON.parse(localStorage.getItem('logs')) || [];
+
+    function displayLogs() {
+      logList.innerHTML = '';
+      logs.forEach((log) => {
+        const li = document.createElement('li');
+        li.textContent = `${log.date} - ${log.exercise} | ${log.meal}`;
+        logList.appendChild(li);
+      });
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const exercise = document.getElementById('exercise').value;
+      const meal = document.getElementById('meal').value;
+      const date = new Date().toLocaleDateString();
+
+      logs.push({ exercise, meal, date });
+      localStorage.setItem('logs', JSON.stringify(logs));
+      displayLogs();
+      form.reset();
+    });
+
+    document.getElementById('clearLogs').addEventListener('click', () => {
+      localStorage.removeItem('logs');
+      logs.length = 0;
+      displayLogs();
+    });
+
+    displayLogs();
+  </script>
+</body>
+</html>
